@@ -1,0 +1,145 @@
+const express = require('express');
+const http = require('http');
+const socketIo = require('socket.io');
+const { Client, LocalAuth } = require('whatsapp-web.js');
+const qrcode = require('qrcode-terminal');
+
+const app = express();
+const server = http.createServer(app);
+const io = socketIo(server);
+
+// Inicialización del cliente de WhatsApp
+const client = new Client({
+    authStrategy: new LocalAuth(),  // Persistir la sesión utilizando LocalAuth
+});
+
+// Generación y visualización del código QR para autenticación
+client.on('qr', (qr) => {
+    qrcode.generate(qr, { small: true });
+    io.emit('qr', qr);  // Enviar el QR al frontend
+});
+
+// Evento cuando el cliente de WhatsApp está listo
+client.on('ready', () => {
+    console.log('¡Estoy listo para ayudarte! 😊');
+    io.emit('ready');  // Notificar al frontend que el bot está listo
+
+    // Enviar un mensaje de bienvenida al usuario
+    io.emit('message', "¡Hola! 👋 Soy el asistente de Rutel Comunicaciones. ¿Cómo puedo ayudarte hoy? 😊\nEscríbeme el número de la opción que más te interese:\n\n1️⃣ Ver nuestros productos\n2️⃣ Descubrir nuestros servicios\n3️⃣ Necesito soporte técnico\n4️⃣ Salir del chat");
+});
+
+// Manejo de mensajes entrantes
+client.on('message', (message) => {
+    console.log('Nuevo mensaje recibido:', message.body);
+
+    // Enviar el mensaje recibido al frontend
+    io.emit('message', message.body);
+
+    // Lógica para responder con opciones predefinidas
+    let respuesta = getResponse(message.body);
+
+    // Enviar la respuesta a WhatsApp
+    client.sendMessage(message.from, respuesta)
+        .then(response => {
+            io.emit('message', respuesta);  // Enviar la misma respuesta al frontend
+        })
+        .catch(error => {
+            console.error('Error enviando mensaje a WhatsApp:', error);
+            io.emit('message', 'Hubo un error al enviar el mensaje. Intenta de nuevo. 😕');
+        });
+});
+
+// Función para obtener la respuesta basada en el mensaje del usuario
+function getResponse(messageBody) {
+    let respuesta = '';
+
+    // Manejo de opciones del menú principal y subopciones en un solo switch
+    switch (true) {
+        // Menú Principal
+        case /hola|holaa|respondan|responder|Que tal|quetal|Como Estan|como estan|quiero saber|me interesan los productos|me puedes contar sobre|necesito saber|quiero conocer|quiero más información|que opciones tengo|como puedo adquirir|donde puedo comprar|información sobre|productos|servicios|ofrecen|que servicios tienen|que productos venden|me puedes mostrar los productos|que planes tienen|que opciones de internet tienen|necesito soporte|necesito ayuda|tengo un problema|necesito ayuda con|problema de internet|tengo un inconveniente|necesito soporte técnico|necesito asesoramiento|como contratar|como puedo contratar|me interesa el plan|me interesa un plan|tienen planes de internet|que servicios ofrecen|me puedes dar detalles sobre/i.test(messageBody):
+            respuesta = "¡Hola! 👋 Soy el asistente de Rutel Comunicaciones. ¿Cómo puedo ayudarte hoy? 😊\nEscríbeme el número de la opción que más te interese:\n\n1️⃣ Ver nuestros productos\n2️⃣ Descubrir nuestros servicios\n3️⃣ Necesito soporte técnico\n4️⃣ Salir del chat";
+            break;
+
+        // Opción 1 (Productos)
+        case messageBody === '1':
+            respuesta = "¡Excelente elección! Aquí están algunos de nuestros productos disponibles, diseñados para mejorar tu experiencia:\n\n" +
+                    "1️⃣ **Plan Básico (10 Mbps)**: Ideal para navegar y hacer videollamadas.\n" +
+                    "2️⃣ **Plan Avanzado (50 Mbps)**: Perfecto para familias y oficinas.\n" +
+                    "3️⃣ **Router Wi-Fi**: Para tener conexión estable en toda tu casa.\n" +
+                    "4️⃣ **Módem portátil**: Llévate el internet donde vayas.\n\n" +
+                    "Elige el número del producto que te interesa o escribe '0' para regresar al menú principal.\n\n" +
+                    "Por ejemplo: escribe '1.1' para saber más sobre el **Plan Básico (10 Mbps)** o '1.2' para el **Plan Avanzado (50 Mbps)**.";
+            break;
+
+        // Opción 2 (Servicios)
+        case messageBody === '2':
+            respuesta = "Nuestros servicios están pensados para mejorar tu día a día. Aquí tienes las opciones:\n\n" +
+                       "1️⃣ **Planes de Internet**: Internet rápido y confiable para tu hogar o negocio.\n" +
+                       "2️⃣ **Instalación de cámaras de seguridad**: Protege tu hogar o negocio con tecnología de última generación.\n\n" +
+                       "Elige el número del servicio que te interesa o escribe '0' para regresar al menú principal.";
+            break;
+
+        // Opción 3 (Soporte)
+        case messageBody === '3':
+            respuesta = "¡Estoy aquí para ayudarte con cualquier problema técnico! 😊 Elige el número que más se ajusta a tu problema:\n\n" +
+                       "1️⃣ **Problema de conexión a Internet**\n" +
+                       "2️⃣ **Problema con dispositivos**\n" +
+                       "3️⃣ **Otro problema técnico**\n\n" +
+                       "Elige el número del problema que tienes o escribe '0' para regresar al menú principal.";
+            break;
+
+        // Opción 4 (Salir)
+        case messageBody === '4':
+            respuesta = "Gracias por confiar en Rutel Comunicaciones. ¡Nos vemos pronto! 😊 Si en algún momento necesitas algo, estaré aquí para ayudarte.";
+            break;
+
+        // Subopciones (1.1, 1.2, 2.1, etc.)
+        case messageBody === '1.1':
+            respuesta = "¡Genial! Estás interesado en el **Plan Básico (10 Mbps)**: Ideal para navegar y hacer videollamadas.\n\nEscríbeme '0' para regresar al menú o 'salir' para finalizar la conversación.";
+            break;
+        case messageBody === '1.2':
+            respuesta = "¡Perfecto! Estás interesado en el **Plan Avanzado (50 Mbps)**: Perfecto para familias y oficinas.\n\nEscríbeme '0' para regresar al menú o 'salir' para finalizar la conversación.";
+            break;
+        case messageBody === '2.1':
+            respuesta = "¡Perfecto! Estás interesado en nuestros **Planes de Internet**. Ofrecemos opciones para todo tipo de usuarios. ¿Te gustaría más información sobre algún plan en particular?\n\nEscríbeme '0' para regresar al menú o 'salir' para finalizar la conversación.";
+            break;
+        case messageBody === '2.2':
+            respuesta = "¡Estás interesado en **Instalación de cámaras de seguridad**! Protege tu hogar o negocio con tecnología de última generación.\n\nEscríbeme '0' para regresar al menú o 'salir' para finalizar la conversación.";
+            break;
+        case messageBody === '3.1':
+            respuesta = "Entiendo que tienes un problema con **la conexión a Internet**. ¿Podrías describir el problema en detalle? Estoy aquí para ayudarte.\n\nEscríbeme '0' para regresar al menú o 'salir' para finalizar la conversación.";
+            break;
+        case messageBody === '3.2':
+            respuesta = "Entiendo que tienes un problema con **los dispositivos**. ¿Podrías decirme qué dispositivo está causando el problema? Estoy aquí para ayudarte.\n\nEscríbeme '0' para regresar al menú o 'salir' para finalizar la conversación.";
+            break;
+        case messageBody === '3.3':
+            respuesta = "Entiendo que tienes otro **problema técnico**. ¿Podrías describir el problema en detalle para que te pueda asistir mejor?\n\nEscríbeme '0' para regresar al menú o 'salir' para finalizar la conversación.";
+            break;
+
+        // Si el usuario escribe 0 para regresar al menú
+        case messageBody === '0':
+            respuesta = "¿En qué puedo ayudarte hoy? 😊 Escribe el número de la opción que más te interese:\n\n1️⃣ Ver nuestros productos\n2️⃣ Descubrir nuestros servicios\n3️⃣ Necesito soporte técnico\n4️⃣ Salir del chat";
+            break;
+
+        // Si no se entiende el mensaje
+        default:
+            respuesta = "Lo siento, no entendí tu mensaje en esta sección. 😕 Por favor, responde con el número de la opción que deseas (1-4), o usa subopciones como 1.1, 1.2, etc. Si no estás seguro, escribe '0' para regresar al menú principal.";
+            break;
+    }
+
+    return respuesta;
+}
+
+// Evento cuando el cliente de WhatsApp se desconecta
+client.on('disconnected', (reason) => {
+    console.log('Cliente desconectado:', reason);
+    io.emit('disconnected', 'El cliente de WhatsApp se ha desconectado. Intenta reconectar más tarde.');
+});
+
+// Inicializar el cliente de WhatsApp
+client.initialize();
+
+// Configuración del puerto del servidor
+server.listen(3000, () => {
+    console.log('Servidor corriendo en el puerto 3000. ¡Listo para ayudarte! 😊');
+});

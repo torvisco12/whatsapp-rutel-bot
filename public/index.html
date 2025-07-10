@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bot de Ventas - Rutel Comunicaciones</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+  <div class="flex flex-col items-center min-h-screen bg-gray-100">
+    <!-- Contenedor principal del chat -->
+    <div id="chat" class="w-full max-w-lg bg-white shadow-lg rounded-lg mt-6">
+      <div class="bg-green-500 p-4 rounded-t-lg text-white font-bold text-xl">Bot de Rutel Comunicaciones</div>
+      <div id="messages" class="p-4 h-60 overflow-y-auto">
+        <!-- Aquí aparecerán los mensajes -->
+      </div>
+      <div class="p-4 bg-gray-100 flex items-center">
+        <input id="message-input" class="w-full p-2 rounded-lg border" placeholder="Escribe un mensaje..." />
+        <button id="send-btn" class="ml-2 bg-green-500 text-white p-2 rounded-lg">Enviar</button>
+      </div>
+    </div>
+
+    <!-- Contenedor para el código QR -->
+    <div id="qr-container" class="hidden">
+      <h3 class="text-lg font-semibold">Escanea el código QR para conectar</h3>
+      <pre id="qr-code" class="bg-white p-4 mt-4"></pre>
+    </div>
+
+    <!-- Estado del bot -->
+    <div id="bot-status" class="mt-6">
+      <p class="text-xl font-semibold">Estado del Bot: <span id="status">Desconectado</span></p>
+    </div>
+  </div>
+
+  <script>
+    const socket = io(); // Conectar con el servidor de Socket.io
+
+    const sendButton = document.getElementById('send-btn');
+    const messageInput = document.getElementById('message-input');
+    const messagesContainer = document.getElementById('messages');
+    const qrContainer = document.getElementById('qr-container');
+    const qrCode = document.getElementById('qr-code');
+    const botStatus = document.getElementById('status');
+
+    // Mostrar el código QR cuando se reciba
+    socket.on('qr', (qr) => {
+      qrContainer.classList.remove('hidden');
+      qrCode.textContent = qr;  // Mostrar el QR generado
+    });
+
+    // Cuando el bot está listo
+    socket.on('ready', () => {
+      botStatus.textContent = 'Conectado'; // Cambiar el estado del bot a "Conectado"
+    });
+
+    // Mostrar el mensaje del bot
+    socket.on('message', (message) => {
+      const msgDiv = document.createElement('div');
+      msgDiv.classList.add('bg-gray-200', 'p-3', 'rounded', 'mb-2');
+      msgDiv.textContent = message;
+      messagesContainer.appendChild(msgDiv);
+    });
+
+    // Enviar el mensaje del usuario
+    sendButton.addEventListener('click', () => {
+      const userMessage = messageInput.value.trim();
+      if (userMessage !== '') {
+        const msgDiv = document.createElement('div');
+        msgDiv.classList.add('bg-green-200', 'p-3', 'rounded', 'mb-2', 'text-right');
+        msgDiv.textContent = userMessage;
+        messagesContainer.appendChild(msgDiv);
+
+        // Enviar el mensaje al servidor de Node.js a través de Socket.io
+        socket.emit('sendMessage', userMessage);
+
+        // Limpiar el campo de entrada
+        messageInput.value = '';
+      }
+    });
+
+    // También enviar al presionar Enter
+    messageInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        sendButton.click();
+      }
+    });
+  </script>
+</body>
+</html>
