@@ -49,86 +49,152 @@ client.on('message', (message) => {
         });
 });
 
-// Función para obtener la respuesta basada en el mensaje del usuario
 function getResponse(messageBody) {
     let respuesta = '';
 
-    // Manejo de opciones del menú principal y subopciones en un solo switch
     switch (true) {
-        // Menú Principal
-        case /hola|holaa|respondan|responder|Que tal|quetal|Como Estan|como estan|quiero saber|me interesan los productos|me puedes contar sobre|necesito saber|quiero conocer|quiero más información|que opciones tengo|como puedo adquirir|donde puedo comprar|información sobre|productos|servicios|ofrecen|que servicios tienen|que productos venden|me puedes mostrar los productos|que planes tienen|que opciones de internet tienen|necesito soporte|necesito ayuda|tengo un problema|necesito ayuda con|problema de internet|tengo un inconveniente|necesito soporte técnico|necesito asesoramiento|como contratar|como puedo contratar|me interesa el plan|me interesa un plan|tienen planes de internet|que servicios ofrecen|me puedes dar detalles sobre/i.test(messageBody):
-            respuesta = "¡Hola! 👋 Soy el asistente de Rutel Comunicaciones. ¿Cómo puedo ayudarte hoy? 😊\nEscríbeme el número de la opción que más te interese:\n\n1️⃣ Ver nuestros productos\n2️⃣ Descubrir nuestros servicios\n3️⃣ Necesito soporte técnico\n4️⃣ Salir del chat";
+        // Menú principal
+        case /hola|holaa|respondan|responder|que tal|como estan|quiero saber|productos|servicios|soporte|ayuda|problema|información/i.test(messageBody):
+            respuesta = "🌟 *¡Hola! Bienvenido a Rutel Comunicaciones* 🌟\n\n" +
+                        "Soy tu *asistente virtual* 🤖. Elige una opción escribiendo el número correspondiente:\n\n" +
+                        "1️⃣ *Ver nuestros productos*\n" +
+                        "2️⃣ *Descubrir nuestros servicios*\n" +
+                        "3️⃣ *Necesito soporte técnico*\n" +
+                        "4️⃣ *Salir del chat*\n\n" +
+                        "💬 *Ejemplo:* escribe `1` para conocer nuestros productos.";
             break;
 
-        // Opción 1 (Productos)
+        // Opción 1 – Productos
         case messageBody === '1':
-            respuesta = "¡Excelente elección! Aquí están algunos de nuestros productos disponibles, diseñados para mejorar tu experiencia:\n\n" +
-                    "1️⃣ **Plan Básico (10 Mbps)**: Ideal para navegar y hacer videollamadas.\n" +
-                    "2️⃣ **Plan Avanzado (50 Mbps)**: Perfecto para familias y oficinas.\n" +
-                    "3️⃣ **Router Wi-Fi**: Para tener conexión estable en toda tu casa.\n" +
-                    "4️⃣ **Módem portátil**: Llévate el internet donde vayas.\n\n" +
-                    "Elige el número del producto que te interesa o escribe '0' para regresar al menú principal.\n\n" +
-                    "Por ejemplo: escribe '1.1' para saber más sobre el **Plan Básico (10 Mbps)** o '1.2' para el **Plan Avanzado (50 Mbps)**.";
+            respuesta = "🛍️ *Nuestros Productos Estrella* 🛍️\n\n" +
+                        "Selecciona una subopción para más detalles:\n\n" +
+                        "1️⃣1️⃣ *Plan Básico (10 Mbps)*\n" +
+                        "1️⃣2️⃣ *Plan Avanzado (50 Mbps)*\n" +
+                        "1️⃣3️⃣ *Router Wi-Fi*\n" +
+                        "1️⃣4️⃣ *Módem portátil*\n\n" +
+                        "🔙 Escribe `0` para regresar al menú principal.";
+            break;
+        case messageBody === '11':
+            respuesta = "📶 *Plan Básico (10 Mbps)* – Ideal para navegar y videollamadas.\n💰 Desde S/ 49.90 mensual.\n\nEscribe `0` para regresar al menú.";
+            break;
+        case messageBody === '12':
+            respuesta = "🚀 *Plan Avanzado (50 Mbps)* – Perfecto para hogares y oficinas.\n💰 Desde S/ 79.90 mensual.\n\nEscribe `0` para regresar al menú.";
+            break;
+        case messageBody === '13':
+            respuesta = "📡 *Router Wi-Fi* – Cobertura estable en todo tu hogar.\n🔧 Instalación incluida.\n\nEscribe `0` para regresar al menú.";
+            break;
+        case messageBody === '14':
+            respuesta = "📱 *Módem portátil* – Llévate tu conexión donde vayas.\n\nEscribe `0` para regresar al menú.";
             break;
 
-        // Opción 2 (Servicios)
+        // Opción 2 – Servicios
         case messageBody === '2':
-            respuesta = "Nuestros servicios están pensados para mejorar tu día a día. Aquí tienes las opciones:\n\n" +
-                       "1️⃣ **Planes de Internet**: Internet rápido y confiable para tu hogar o negocio.\n" +
-                       "2️⃣ **Instalación de cámaras de seguridad**: Protege tu hogar o negocio con tecnología de última generación.\n\n" +
-                       "Elige el número del servicio que te interesa o escribe '0' para regresar al menú principal.";
+            respuesta = "💼 *Nuestros Servicios* 💼\n\n" +
+                        "Selecciona una subopción para saber más:\n\n" +
+                        "2️⃣1️⃣ *Planes de Internet*\n" +
+                        "2️⃣2️⃣ *Instalación de cámaras de seguridad*\n\n" +
+                        "🔙 Escribe `0` para volver al menú principal.";
             break;
 
-        // Opción 3 (Soporte)
+        // Servicios – Planes de Internet
+        case messageBody === '21':
+            respuesta = "🌐 *Planes de Internet* 🌐\n\n" +
+                        "Elige uno de nuestros planes disponibles:\n\n" +
+                        "2️⃣1️⃣1️⃣ *Plan Básico (10 Mbps)*\n" +
+                        "2️⃣1️⃣2️⃣ *Plan Avanzado (50 Mbps)*\n" +
+                        "2️⃣1️⃣3️⃣ *Router Wi-Fi*\n" +
+                        "2️⃣1️⃣4️⃣ *Módem portátil*\n\n" +
+                        "🔙 Escribe `0` para regresar al menú principal.";
+            break;
+        case messageBody === '211':
+            respuesta = "📶 *Plan Básico (10 Mbps)* – Ideal para tareas básicas.\n💰 Desde S/ 49.90 mensual.\n\nEscribe `0` para regresar al menú.";
+            break;
+        case messageBody === '212':
+            respuesta = "🚀 *Plan Avanzado (50 Mbps)* – Para varios dispositivos y streaming.\n💰 Desde S/ 79.90 mensual.\n\nEscribe `0` para regresar al menú.";
+            break;
+        case messageBody === '213':
+            respuesta = "📡 *Router Wi-Fi* – Cobertura ampliada para todos los rincones.\n\nEscribe `0` para regresar al menú.";
+            break;
+        case messageBody === '2.1.4':
+            respuesta = "📱 *Módem portátil* – Ideal para llevar internet donde lo necesites.\n\nEscribe `0` para regresar al menú.";
+            break;
+
+        // Servicios – Cámaras de seguridad
+        case messageBody === '22':
+            respuesta = "📷 *Instalación de Cámaras de Seguridad* 📷\n\n" +
+                        "Elige una opción para más información:\n\n" +
+                        "2️⃣2️⃣1️⃣ *Cámara HD con instalación incluida*\n" +
+                        "2️⃣2️⃣2️⃣ *Kit de 4 cámaras + DVR*\n" +
+                        "2️⃣2️⃣3️⃣ *Monitoreo remoto desde celular*\n" +
+                        "2️⃣2️⃣4️⃣ *Mantenimiento preventivo*\n\n" +
+                        "🔙 Escribe `0` para regresar al menú principal.";
+            break;
+        case messageBody === '221':
+            respuesta = "📷 *Cámara HD con instalación incluida* – Vigilancia básica y efectiva.\nIncluye garantía y soporte.\n\nEscribe `0` para regresar al menú.";
+            break;
+        case messageBody === '222':
+            respuesta = "📦 *Kit de 4 cámaras + DVR* – Seguridad total para tu hogar o negocio.\nIncluye grabación continua.\n\nEscribe `0` para regresar al menú.";
+            break;
+        case messageBody === '223':
+            respuesta = "📱 *Monitoreo remoto desde celular* – Controla tus cámaras desde cualquier lugar.\n\nEscribe `0` para regresar al menú.";
+            break;
+        case messageBody === '224':
+            respuesta = "🧰 *Mantenimiento preventivo* – Mantén tu sistema de seguridad en óptimas condiciones.\nIncluye revisión, limpieza y ajustes.\n\nEscribe `0` para regresar al menú.";
+            break;
+
+        // Opción 3 – Soporte Técnico
         case messageBody === '3':
-            respuesta = "¡Estoy aquí para ayudarte con cualquier problema técnico! 😊 Elige el número que más se ajusta a tu problema:\n\n" +
-                       "1️⃣ **Problema de conexión a Internet**\n" +
-                       "2️⃣ **Problema con dispositivos**\n" +
-                       "3️⃣ **Otro problema técnico**\n\n" +
-                       "Elige el número del problema que tienes o escribe '0' para regresar al menú principal.";
+            respuesta = "🛠️ *Soporte Técnico* 🛠️\n\n" +
+                        "Selecciona una opción:\n\n" +
+                        "3️⃣1️⃣ *Problema de conexión a Internet*\n" +
+                        "3️⃣2️⃣ *Problema con dispositivos*\n" +
+                        "3️⃣3️⃣ *Otro problema técnico*\n\n" +
+                        "🔙 Escribe `0` para regresar al menú principal.";
+            break;
+        case messageBody === '31':
+            respuesta = "📡 *Problema de conexión* – Describe el problema (sin señal, lento, etc.) para ayudarte mejor.\n\nEscribe `0` para regresar al menú.";
+            break;
+        case messageBody === '32':
+            respuesta = "💻 *Problema con dispositivos* – Indica qué equipo presenta fallas.\n\nEscribe `0` para regresar al menú.";
+            break;
+        case messageBody === '33':
+            respuesta = "❓ *Otro problema técnico* – Cuéntanos qué sucede y te apoyaremos lo antes posible.\n\nEscribe `0` para regresar al menú.";
             break;
 
-        // Opción 4 (Salir)
+        // Opción 4 – Salida
         case messageBody === '4':
-            respuesta = "Gracias por confiar en Rutel Comunicaciones. ¡Nos vemos pronto! 😊 Si en algún momento necesitas algo, estaré aquí para ayudarte.";
+            respuesta = "👋 *Gracias por contactar a Rutel Comunicaciones.*\n¡Hasta pronto! Si necesitas más ayuda, solo escríbeme. 😊";
             break;
 
-        // Subopciones (1.1, 1.2, 2.1, etc.)
-        case messageBody === '1.1':
-            respuesta = "¡Genial! Estás interesado en el **Plan Básico (10 Mbps)**: Ideal para navegar y hacer videollamadas.\n\nEscríbeme '0' para regresar al menú o 'salir' para finalizar la conversación.";
-            break;
-        case messageBody === '1.2':
-            respuesta = "¡Perfecto! Estás interesado en el **Plan Avanzado (50 Mbps)**: Perfecto para familias y oficinas.\n\nEscríbeme '0' para regresar al menú o 'salir' para finalizar la conversación.";
-            break;
-        case messageBody === '2.1':
-            respuesta = "¡Perfecto! Estás interesado en nuestros **Planes de Internet**. Ofrecemos opciones para todo tipo de usuarios. ¿Te gustaría más información sobre algún plan en particular?\n\nEscríbeme '0' para regresar al menú o 'salir' para finalizar la conversación.";
-            break;
-        case messageBody === '2.2':
-            respuesta = "¡Estás interesado en **Instalación de cámaras de seguridad**! Protege tu hogar o negocio con tecnología de última generación.\n\nEscríbeme '0' para regresar al menú o 'salir' para finalizar la conversación.";
-            break;
-        case messageBody === '3.1':
-            respuesta = "Entiendo que tienes un problema con **la conexión a Internet**. ¿Podrías describir el problema en detalle? Estoy aquí para ayudarte.\n\nEscríbeme '0' para regresar al menú o 'salir' para finalizar la conversación.";
-            break;
-        case messageBody === '3.2':
-            respuesta = "Entiendo que tienes un problema con **los dispositivos**. ¿Podrías decirme qué dispositivo está causando el problema? Estoy aquí para ayudarte.\n\nEscríbeme '0' para regresar al menú o 'salir' para finalizar la conversación.";
-            break;
-        case messageBody === '3.3':
-            respuesta = "Entiendo que tienes otro **problema técnico**. ¿Podrías describir el problema en detalle para que te pueda asistir mejor?\n\nEscríbeme '0' para regresar al menú o 'salir' para finalizar la conversación.";
-            break;
-
-        // Si el usuario escribe 0 para regresar al menú
+        // Volver al menú principal
         case messageBody === '0':
-            respuesta = "¿En qué puedo ayudarte hoy? 😊 Escribe el número de la opción que más te interese:\n\n1️⃣ Ver nuestros productos\n2️⃣ Descubrir nuestros servicios\n3️⃣ Necesito soporte técnico\n4️⃣ Salir del chat";
+            respuesta = "📋 *Menú Principal*\n\n" +
+                        "1️⃣ *Ver nuestros productos*\n" +
+                        "2️⃣ *Descubrir nuestros servicios*\n" +
+                        "3️⃣ *Necesito soporte técnico*\n" +
+                        "4️⃣ *Salir del chat*\n\n" +
+                        "💬 Escribe el número de la opción que más te interese.";
             break;
 
-        // Si no se entiende el mensaje
+        // Entrada no reconocida
         default:
-            respuesta = "Lo siento, no entendí tu mensaje en esta sección. 😕 Por favor, responde con el número de la opción que deseas (1-4), o usa subopciones como 1.1, 1.2, etc. Si no estás seguro, escribe '0' para regresar al menú principal.";
+            respuesta = "😕 *No entendí tu mensaje.*\n\n" +
+                        "Por favor responde con el número de la opción (como `1`, `2.2`, `3.1`, etc.).\nEscribe `0` para volver al menú principal.";
             break;
     }
 
     return respuesta;
 }
+// Evento cuando el cliente de WhatsApp se autentica correctamente
+client.on('authenticated', () => {
+    console.log('Cliente autenticado correctamente. ¡Listo para ayudarte! 😊');
+    io.emit('authenticated');  // Notificar al frontend que el bot está autenticado
+});
+// Evento cuando el cliente de WhatsApp falla al autenticarse
+client.on('auth_failure', (message) => {
+    console.error('Error de autenticación:', message);
+    io.emit('auth_failure', 'Error de autenticación. Por favor, verifica tu conexión y vuelve a intentarlo.');
+});
 
 // Evento cuando el cliente de WhatsApp se desconecta
 client.on('disconnected', (reason) => {

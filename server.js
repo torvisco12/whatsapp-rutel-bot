@@ -3,52 +3,81 @@ const http = require('http');
 const socketIo = require('socket.io');
 const { Client, LocalAuth } = require('whatsapp-web.js');
 const qrcode = require('qrcode-terminal');
+const fs = require('fs');
 
 const app = express();
 const server = http.createServer(app);
 const io = socketIo(server);
 
-// Inicialización del cliente de WhatsApp
-const client = new Client({
-    authStrategy: new LocalAuth(),  // Persistir la sesión utilizando LocalAuth
+// Servir archivos estáticos desde la carpeta "public"
+app.use(express.static('public'));
+
+// Inicializar WhatsApp pero solo cuando se presione el botón
+let client;
+
+// Manejo de conexión desde frontend
+io.on('connection', (socket) => {
+    console.log('💻 Cliente conectado al frontend');
+
+    socket.on('iniciar', () => {
+        console.log('🔄 Usuario presionó "Iniciar"');
+
+        // Inicializa el cliente si aún no está creado
+        if (!client) {
+            client = new Client({
+                authStrategy: new LocalAuth(), // Persistencia local
+            });
+
+            // Mostrar QR
+            client.on('qr', (qr) => {
+                qrcode.generate(qr, { small: true });
+                io.emit('qr', qr); // Enviar QR al navegador
+            });
+
+            // Cuando WhatsApp está listo
+            client.on('ready', () => {
+                console.log('✅ ¡Bot conectado a WhatsApp!');
+                io.emit('ready');
+                io.emit('message', "¡Hola! 👋 Soy el asistente de Rutel Comunicaciones. ¿Cómo puedo ayudarte hoy? 😊\nEscríbeme el número de la opción que más te interese:\n\n1️⃣ Ver nuestros productos\n2️⃣ Descubrir nuestros servicios\n3️⃣ Necesito soporte técnico\n4️⃣ Salir del chat");
+            });
+
+            // Autenticación correcta
+            client.on('authenticated', () => {
+                console.log('🔐 Cliente autenticado');
+                io.emit('authenticated');
+            });
+
+            // Error de autenticación
+            client.on('auth_failure', (message) => {
+                console.error('❌ Error de autenticación:', message);
+                io.emit('auth_failure', message);
+            });
+
+            // Desconexión
+            client.on('disconnected', (reason) => {
+                console.warn('⚠️ Cliente desconectado:', reason);
+                io.emit('disconnected', reason);
+                client = null;
+            });
+
+            // Mensajes entrantes
+            client.on('message', (message) => {
+                console.log('📨 Nuevo mensaje:', message.body);
+                io.emit('message', message.body);
+
+                const respuesta = getResponse(message.body);
+                client.sendMessage(message.from, respuesta)
+                    .then(() => io.emit('message', respuesta))
+                    .catch(err => {
+                        console.error('❌ Error al enviar:', err);
+                        io.emit('message', 'Hubo un error al enviar el mensaje. 😕');
+                    });
+            });
+
+            client.initialize();
+        }
+    });
 });
-
-// Generación y visualización del código QR para autenticación
-client.on('qr', (qr) => {
-    qrcode.generate(qr, { small: true });
-    io.emit('qr', qr);  // Enviar el QR al frontend
-});
-
-// Evento cuando el cliente de WhatsApp está listo
-client.on('ready', () => {
-    console.log('¡Estoy listo para ayudarte! 😊');
-    io.emit('ready');  // Notificar al frontend que el bot está listo
-
-    // Enviar un mensaje de bienvenida al usuario
-    io.emit('message', "¡Hola! 👋 Soy el asistente de Rutel Comunicaciones. ¿Cómo puedo ayudarte hoy? 😊\nEscríbeme el número de la opción que más te interese:\n\n1️⃣ Ver nuestros productos\n2️⃣ Descubrir nuestros servicios\n3️⃣ Necesito soporte técnico\n4️⃣ Salir del chat");
-});
-
-// Manejo de mensajes entrantes
-client.on('message', (message) => {
-    console.log('Nuevo mensaje recibido:', message.body);
-
-    // Enviar el mensaje recibido al frontend
-    io.emit('message', message.body);
-
-    // Lógica para responder con opciones predefinidas
-    let respuesta = getResponse(message.body);
-
-    // Enviar la respuesta a WhatsApp
-    client.sendMessage(message.from, respuesta)
-        .then(response => {
-            io.emit('message', respuesta);  // Enviar la misma respuesta al frontend
-        })
-        .catch(error => {
-            console.error('Error enviando mensaje a WhatsApp:', error);
-            io.emit('message', 'Hubo un error al enviar el mensaje. Intenta de nuevo. 😕');
-        });
-});
-
 function getResponse(messageBody) {
     let respuesta = '';
 
@@ -185,27 +214,15 @@ function getResponse(messageBody) {
 
     return respuesta;
 }
-// Evento cuando el cliente de WhatsApp se autentica correctamente
-client.on('authenticated', () => {
-    console.log('Cliente autenticado correctamente. ¡Listo para ayudarte! 😊');
-    io.emit('authenticated');  // Notificar al frontend que el bot está autenticado
-});
-// Evento cuando el cliente de WhatsApp falla al autenticarse
-client.on('auth_failure', (message) => {
-    console.error('Error de autenticación:', message);
-    io.emit('auth_failure', 'Error de autenticación. Por favor, verifica tu conexión y vuelve a intentarlo.');
-});
-
-// Evento cuando el cliente de WhatsApp se desconecta
-client.on('disconnected', (reason) => {
-    console.log('Cliente desconectado:', reason);
-    io.emit('disconnected', 'El cliente de WhatsApp se ha desconectado. Intenta reconectar más tarde.');
-});
-
-// Inicializar el cliente de WhatsApp
-client.initialize();
-
-// Configuración del puerto del servidor
+// Iniciar servidor en puerto 3000
 server.listen(3000, () => {
-    console.log('Servidor corriendo en el puerto 3000. ¡Listo para ayudarte! 😊');
+    console.log('🚀 Servidor corriendo en http://localhost:3000');
+});
+// Manejo de errores
+process.on('uncaughtException', (err) => {
+    console.error('❗ Error no capturado:', err);
+    if (client) {
+        client.destroy();
+    }
+    process.exit(1);
 });
