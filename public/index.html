@@ -47,20 +47,20 @@
       border: none;
       font-size: 16px;
       border-radius: 5px;
-      cursor: pointer;
-    }
-
-    button:hover {
-      background-color: #1b4f72;
+      cursor: not-allowed;
     }
   </style>
 </head>
 <body>
 
   <h1>🤖 Asistente Virtual de Rutel</h1>
-  <button onclick="iniciarBot()">Iniciar Bot de WhatsApp</button>
+  <!-- Botón solo decorativo, deshabilitado -->
+  <button id="btn-iniciar" disabled>🔄 Bot iniciando...</button>
 
   <div id="qr"></div>
+  <div id="estado-bot" style="margin-top: 10px; font-weight: bold; color: green;">
+    🤖 Estado: Asistente automático activo
+  </div>
 
   <h3>📨 Mensajes</h3>
   <div id="messages"></div>
@@ -68,9 +68,24 @@
   <script>
     const socket = io();
 
-    function iniciarBot() {
-      socket.emit('iniciar');
-    }
+    // Escucha mensajes del servidor
+    socket.on('message', (msg) => {
+      mostrarMensaje('📩 ' + msg);
+    });
+
+    // Estado: usuario fue derivado a un asesor
+    socket.on('estadoHumano', (numero) => {
+      const estado = document.getElementById('estado-bot');
+      estado.textContent = `🧑‍💼 ${numero} está siendo atendido por un asesor humano.`;
+      estado.style.color = 'red';
+    });
+
+    // Estado: usuario regresó al bot automático
+    socket.on('estadoBot', (numero) => {
+      const estado = document.getElementById('estado-bot');
+      estado.textContent = `🤖 ${numero} está usando el asistente automático.`;
+      estado.style.color = 'green';
+    });
 
     socket.on('qr', (qr) => {
       const qrDiv = document.getElementById('qr');
@@ -94,10 +109,6 @@
 
     socket.on('disconnected', (msg) => {
       mostrarMensaje('⚠️ Cliente desconectado: ' + msg);
-    });
-
-    socket.on('message', (msg) => {
-      mostrarMensaje('📩 ' + msg);
     });
 
     function mostrarMensaje(texto) {

@@ -3,94 +3,114 @@ const http = require('http');
 const socketIo = require('socket.io');
 const { Client, LocalAuth } = require('whatsapp-web.js');
 const qrcode = require('qrcode-terminal');
-const fs = require('fs');
 
 const app = express();
 const server = http.createServer(app);
 const io = socketIo(server);
 
-// Servir archivos estáticos desde la carpeta "public"
 app.use(express.static('public'));
 
-// Inicializar WhatsApp pero solo cuando se presione el botón
 let client;
+const usuariosEnAsesor = new Set(); // Guarda números en modo asesor
 
-// Manejo de conexión desde frontend
+// 🔄 Iniciar automáticamente el bot al arrancar el servidor
+initWhatsAppClient();
+
 io.on('connection', (socket) => {
-    console.log('💻 Cliente conectado al frontend');
+    console.log('💻 Cliente web conectado');
 
     socket.on('iniciar', () => {
-        console.log('🔄 Usuario presionó "Iniciar"');
-
-        // Inicializa el cliente si aún no está creado
-        if (!client) {
-            client = new Client({
-                authStrategy: new LocalAuth(), // Persistencia local
-            });
-
-            // Mostrar QR
-            client.on('qr', (qr) => {
-                qrcode.generate(qr, { small: true });
-                io.emit('qr', qr); // Enviar QR al navegador
-            });
-
-            // Cuando WhatsApp está listo
-            client.on('ready', () => {
-                console.log('✅ ¡Bot conectado a WhatsApp!');
-                io.emit('ready');
-                io.emit('message', "¡Hola! 👋 Soy el asistente de Rutel Comunicaciones. ¿Cómo puedo ayudarte hoy? 😊\nEscríbeme el número de la opción que más te interese:\n\n1️⃣ Ver nuestros productos\n2️⃣ Descubrir nuestros servicios\n3️⃣ Necesito soporte técnico\n4️⃣ Salir del chat");
-            });
-
-            // Autenticación correcta
-            client.on('authenticated', () => {
-                console.log('🔐 Cliente autenticado');
-                io.emit('authenticated');
-            });
-
-            // Error de autenticación
-            client.on('auth_failure', (message) => {
-                console.error('❌ Error de autenticación:', message);
-                io.emit('auth_failure', message);
-            });
-
-            // Desconexión
-            client.on('disconnected', (reason) => {
-                console.warn('⚠️ Cliente desconectado:', reason);
-                io.emit('disconnected', reason);
-                client = null;
-            });
-
-            // Mensajes entrantes
-            client.on('message', (message) => {
-                console.log('📨 Nuevo mensaje:', message.body);
-                io.emit('message', message.body);
-
-                const respuesta = getResponse(message.body);
-                client.sendMessage(message.from, respuesta)
-                    .then(() => io.emit('message', respuesta))
-                    .catch(err => {
-                        console.error('❌ Error al enviar:', err);
-                        io.emit('message', 'Hubo un error al enviar el mensaje. 😕');
-                    });
-            });
-
-            client.initialize();
-        }
+        console.log('⚙️ Cliente web solicitó iniciar (ya está iniciado automáticamente)');
     });
 });
+
+function initWhatsAppClient() {
+    if (!client) {
+        client = new Client({
+            authStrategy: new LocalAuth(),
+        });
+
+        client.on('qr', (qr) => {
+            qrcode.generate(qr, { small: true });
+            io.emit('qr', qr);
+        });
+
+        client.on('ready', () => {
+            console.log('✅ Cliente listo');
+            io.emit('ready');
+        });
+
+        client.on('authenticated', () => {
+            console.log('🔐 Autenticado');
+            io.emit('authenticated');
+        });
+
+        client.on('auth_failure', (msg) => {
+            console.error('❌ Error auth:', msg);
+            io.emit('auth_failure', msg);
+        });
+
+        client.on('disconnected', (reason) => {
+            console.warn('⚠️ Desconectado:', reason);
+            io.emit('disconnected', reason);
+            client = null;
+        });
+
+        client.on('message', (message) => {
+            console.log('📨 Mensaje:', message.body);
+            const numero = message.from;
+
+            if (usuariosEnAsesor.has(numero)) {
+                if (message.body.toLowerCase().includes('volver al bot')) {
+                    usuariosEnAsesor.delete(numero);
+                    client.sendMessage(numero, "🤖 ¡Has vuelto con el asistente automático!\nEscribe `0` para ver el menú principal.");
+                    io.emit('estadoBot', numero);
+                } else {
+                    io.emit('message', `💬 [HUMANO] ${numero}: ${message.body}`);
+                }
+                return;
+            }
+
+            io.emit('message', `🤖 [BOT] ${numero}: ${message.body}`);
+
+            if (message.body.trim() === '4') {
+                usuariosEnAsesor.add(numero);
+                client.sendMessage(numero, "🧑‍💼 *Has sido derivado a un asesor humano.*\no escribe *volver al bot*\nPor favor, espera mientras te contactamos.");
+                io.emit('estadoHumano', numero);
+                return;
+            }
+
+            if (message.body.trim() === '5') {
+                client.sendMessage(numero, "👋 *Gracias por contactar. Hasta pronto!* 😊");
+                return;
+            }
+
+            const respuesta = getResponse(message.body);
+            client.sendMessage(numero, respuesta)
+                .then(() => io.emit('message', `🤖 Bot: ${respuesta}`))
+                .catch(err => {
+                    console.error('❌ Error al enviar:', err);
+                    io.emit('message', 'Error enviando respuesta.');
+                });
+        });
+
+        client.initialize();
+    }
+}
 function getResponse(messageBody) {
     let respuesta = '';
 
     switch (true) {
         // Menú principal
         case /hola|holaa|respondan|responder|que tal|como estan|quiero saber|productos|servicios|soporte|ayuda|problema|información/i.test(messageBody):
-            respuesta = "🌟 *¡Hola! Bienvenido a Rutel Comunicaciones* 🌟\n\n" +
-                        "Soy tu *asistente virtual* 🤖. Elige una opción escribiendo el número correspondiente:\n\n" +
-                        "1️⃣ *Ver nuestros productos*\n" +
-                        "2️⃣ *Descubrir nuestros servicios*\n" +
-                        "3️⃣ *Necesito soporte técnico*\n" +
-                        "4️⃣ *Salir del chat*\n\n" +
-                        "💬 *Ejemplo:* escribe `1` para conocer nuestros productos.";
+           respuesta = "🌟 *¡Hola! Bienvenido a Rutel Comunicaciones* 🌟\n\n" +
+                "Soy tu *asistente virtual* 🤖. Elige una opción escribiendo el número correspondiente:\n\n" +
+                "1️⃣ *Ver nuestros productos*\n" +
+                "2️⃣ *Descubrir nuestros servicios*\n" +
+                "3️⃣ *Necesito soporte técnico*\n" +
+                "4️⃣ *Quiero un asesor humano*\n" +
+                "5️⃣ *Salir del chat*\n\n" +
+                "💬 *Ejemplo:* escribe `1` para conocer nuestros productos.";
             break;
 
         // Opción 1 – Productos
@@ -198,26 +218,29 @@ function getResponse(messageBody) {
         // Volver al menú principal
         case messageBody === '0':
             respuesta = "📋 *Menú Principal*\n\n" +
-                        "1️⃣ *Ver nuestros productos*\n" +
-                        "2️⃣ *Descubrir nuestros servicios*\n" +
-                        "3️⃣ *Necesito soporte técnico*\n" +
-                        "4️⃣ *Salir del chat*\n\n" +
-                        "💬 Escribe el número de la opción que más te interese.";
+                "1️⃣ *Ver nuestros productos*\n" +
+                "2️⃣ *Descubrir nuestros servicios*\n" +
+                "3️⃣ *Necesito soporte técnico*\n" +
+                "4️⃣ *Quiero un asesor humano*\n" +
+                "5️⃣ *Salir del chat*\n\n" +
+                "💬 *Ejemplo:* escribe `1` para conocer nuestros productos.";
             break;
 
         // Entrada no reconocida
         default:
             respuesta = "😕 *No entendí tu mensaje.*\n\n" +
-                        "Por favor responde con el número de la opción (como `1`, `2.2`, `3.1`, etc.).\nEscribe `0` para volver al menú principal.";
+                        "Por favor responde con el número de la opción (como `1`, `2`,`22`, `3`,`31`, etc.).\nEscribe `0` para volver al menú principal.";
             break;
     }
 
     return respuesta;
 }
-// Iniciar servidor en puerto 3000
-server.listen(3000, () => {
-    console.log('🚀 Servidor corriendo en http://localhost:3000');
+// ✅ Iniciar servidor en Railway o localmente
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+    console.log(`🚀 Servidor corriendo en el puerto ${PORT}`);
 });
+
 // Manejo de errores
 process.on('uncaughtException', (err) => {
     console.error('❗ Error no capturado:', err);
